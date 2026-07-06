@@ -42,6 +42,7 @@ def show_webpage():
                 .card { border: none; border-radius: 15px; box-shadow: 0 6px 12px rgba(0,0,0,0.05); }
                 .btn-primary { background-color: #0b1a40; border: none; }
                 .map-wrapper { border-radius: 15px; overflow: hidden; display: none; margin-bottom: 20px;}
+                .weather-badge { display: inline-block; background-color: #e3f2fd; color: #0277bd; padding: 5px 10px; border-radius: 8px; font-weight: bold; margin-bottom: 15px; font-size: 0.9em; }
             </style>
         </head>
         <body>
@@ -74,43 +75,57 @@ def show_webpage():
             </div>
 
             <script>
-                function loadGolfCourses() {
+                async function loadGolfCourses() {
                     const loc = document.getElementById('location-input').value;
                     let url = '/search';
                     if (loc) { url = '/search?location=' + loc; }
 
-                    fetch(url).then(r => r.json()).then(data => {
-                        const contentArea = document.getElementById('content-area');
-                        const mapContainer = document.getElementById('map-container');
-                        const mapFrame = document.getElementById('map-frame');
-                        contentArea.innerHTML = ""; 
+                    const response = await fetch(url);
+                    const data = await response.json();
+                    
+                    const contentArea = document.getElementById('content-area');
+                    const mapContainer = document.getElementById('map-container');
+                    const mapFrame = document.getElementById('map-frame');
+                    contentArea.innerHTML = ""; 
+                    
+                    if (data.result.length === 0) {
+                        contentArea.innerHTML = "<h4 class='text-muted text-center mt-5 w-100'>해당 지역에는 골프장이 없습니다.</h4>";
+                        mapContainer.style.display = 'none'; return;
+                    }
+
+                    const first = data.result[0];
+                    const bbox = `${first.lng - 0.02},${first.lat - 0.02},${first.lng + 0.02},${first.lat + 0.02}`;
+                    mapFrame.src = `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${first.lat},${first.lng}`;
+                    mapContainer.style.display = 'block';
+
+                    // 🌟 날씨 API 연동: 외부 전문가에게 날씨 물어보기
+                    for (const c of data.result) {
+                        let weatherHtml = "<div class='weather-badge'>☁️ 날씨 정보 불러오는 중...</div>";
                         
-                        if (data.result.length === 0) {
-                            contentArea.innerHTML = "<h4 class='text-muted text-center mt-5 w-100'>해당 지역에는 골프장이 없습니다.</h4>";
-                            mapContainer.style.display = 'none'; return;
+                        try {
+                            const weatherRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${c.lat}&longitude=${c.lng}&current_weather=true`);
+                            const weatherData = await weatherRes.json();
+                            const temp = weatherData.current_weather.temperature;
+                            weatherHtml = `<div class='weather-badge'>🌡️ 실시간 기온: ${temp}°C</div>`;
+                        } catch (error) {
+                            weatherHtml = `<div class='weather-badge'>⚠️ 날씨 정보 일시 오류</div>`;
                         }
 
-                        const first = data.result[0];
-                        const bbox = `${first.lng - 0.02},${first.lat - 0.02},${first.lng + 0.02},${first.lat + 0.02}`;
-                        mapFrame.src = `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${first.lat},${first.lng}`;
-                        mapContainer.style.display = 'block';
-
-                        data.result.forEach(c => {
-                            contentArea.innerHTML += `
-                                <div class="col-md-4 col-sm-6">
-                                    <div class="card h-100 p-3">
-                                        <div class="card-body">
-                                            <h4 class="card-title fw-bold">🏌️‍♂️ ${c.name}</h4>
-                                            <h6 class="card-subtitle mb-4 text-muted">📍 위치: ${c.location}</h6>
-                                            <input type="text" id="name-${c.id}" class="form-control mb-2" placeholder="예약자 성함">
-                                            <input type="date" id="date-${c.id}" class="form-control mb-2">
-                                            <button class="btn btn-success w-100 fw-bold" onclick="bookCourse(${c.id}, '${c.name}')">예약 확정하기</button>
-                                        </div>
+                        contentArea.innerHTML += `
+                            <div class="col-md-4 col-sm-6">
+                                <div class="card h-100 p-3">
+                                    <div class="card-body">
+                                        <h4 class="card-title fw-bold">🏌️‍♂️ ${c.name}</h4>
+                                        <h6 class="card-subtitle mb-3 text-muted">📍 위치: ${c.location}</h6>
+                                        ${weatherHtml}
+                                        <input type="text" id="name-${c.id}" class="form-control mb-2" placeholder="예약자 성함">
+                                        <input type="date" id="date-${c.id}" class="form-control mb-2">
+                                        <button class="btn btn-success w-100 fw-bold" onclick="bookCourse(${c.id}, '${c.name}')">예약 확정하기</button>
                                     </div>
                                 </div>
-                            `;
-                        });
-                    });
+                            </div>
+                        `;
+                    }
                 }
 
                 function bookCourse(id, cName) {
