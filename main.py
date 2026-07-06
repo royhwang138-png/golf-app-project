@@ -4,22 +4,6 @@ from fastapi.responses import HTMLResponse
 
 app = FastAPI()
 
-# 🌟 골프장 데이터와 티타임 상태를 관리하는 서버
-@app.get("/api/course-detail/{course_id}")
-def get_course_detail(course_id: int):
-    # 실제로는 여기서 외부 골프장 API를 호출합니다.
-    # 여기서는 시뮬레이션을 위해 상태값(예약가능/마감)을 반환합니다.
-    return {
-        "name": "남서울 컨트리클럽",
-        "description": "품격 있는 코스와 완벽한 관리를 자랑하는 명문 골프장",
-        "tee_times": [
-            {"time": "07:30", "status": "available", "price": "220,000원"},
-            {"time": "08:15", "status": "booked", "price": "220,000원"},
-            {"time": "12:40", "status": "available", "price": "180,000원"},
-            {"time": "13:30", "status": "booked", "price": "180,000원"}
-        ]
-    }
-
 @app.get("/web", response_class=HTMLResponse)
 def show_webpage():
     return """
@@ -31,36 +15,37 @@ def show_webpage():
             .tee-time-btn { margin: 5px; padding: 10px; border-radius: 10px; border: 1px solid #ccc; width: 100px; }
             .available { background-color: #d1e7dd; color: #0f5132; cursor: pointer; }
             .booked { background-color: #f8d7da; color: #842029; cursor: not-allowed; }
+            .hero-img { width: 100%; height: 300px; object-fit: cover; border-radius: 0 0 20px 20px; }
         </style>
     </head>
     <body class="bg-light">
-        <div class="container mt-5">
-            <div id="detail-view" class="card p-4 shadow">
-                <h2 id="course-name" class="fw-bold">...</h2>
-                <p id="course-desc" class="text-muted"></p>
+        <div class="container-fluid p-0">
+            <!-- 1. 골프장 이미지 -->
+            <img src="https://images.unsplash.com/photo-1593111736653-538640192e42?auto=format&fit=crop&w=800&q=80" class="hero-img" alt="골프장">
+        </div>
+        
+        <div class="container mt-4 pb-5">
+            <div class="card p-4 shadow">
+                <!-- 2. 골프장 소개 -->
+                <h2 class="fw-bold">남서울 컨트리클럽</h2>
+                <p class="text-muted">대한민국 최고의 명문 골프장입니다.</p>
                 <hr>
-                <h5>티타임 선택</h5>
-                <div id="tee-time-list" class="d-flex flex-wrap"></div>
-                <div id="price-info" class="mt-4 p-3 bg-white border rounded">가격을 확인하려면 시간을 선택하세요.</div>
+                
+                <!-- 3. 코스 소개 -->
+                <h5>코스 소개</h5>
+                <p>전략적이고 아름다운 자연경관을 자랑하는 18홀 정규 코스입니다.</p>
+                <hr>
+                
+                <!-- 4. 티업 날짜 및 시간 선택 -->
+                <h5>티업 시간 선택</h5>
+                <input type="date" class="form-control mb-3">
+                <div id="tee-time-list" class="d-flex flex-wrap">
+                    <div class="tee-time-btn available">07:30</div>
+                    <div class="tee-time-btn booked">08:15 (마감)</div>
+                    <div class="tee-time-btn available">12:40</div>
+                </div>
             </div>
         </div>
-        <script>
-            fetch('/api/course-detail/1').then(r=>r.json()).then(data => {
-                document.getElementById('course-name').innerText = data.name;
-                document.getElementById('course-desc').innerText = data.description;
-                const list = document.getElementById('tee-time-list');
-                data.tee_times.forEach(t => {
-                    const btn = document.createElement('div');
-                    btn.className = `tee-time-btn ${t.status}`;
-                    btn.innerText = t.time;
-                    btn.onclick = () => { 
-                        if(t.status === 'available') document.getElementById('price-info').innerHTML = `선택한 시간: <strong>${t.time}</strong> <br> 가격: <strong>${t.price}</strong>`;
-                        else alert('이미 예약된 시간입니다!');
-                    };
-                    list.appendChild(btn);
-                });
-            });
-        </script>
     </body>
     </html>
     """
