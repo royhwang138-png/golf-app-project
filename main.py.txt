@@ -1,0 +1,20 @@
+from fastapi import FastAPI
+
+app = FastAPI()
+
+golf_courses = [
+    {"id": 1, "name": "신한CC", "location": "서울"},
+    {"id": 2, "name": "드림골프장", "location": "경기"},
+    {"id": 3, "name": "파인힐스", "location": "강원"}
+]
+
+@app.get("/")
+def read_root():
+    return {"message": "골프 예약 앱에 오신 것을 환영합니다!"}
+
+@app.get("/search")
+def search_golf(location: str = None):
+    if location:
+        result = [c for c in golf_courses if c["location"] == location]
+        return {"result": result}
+    return {"result": golf_courses}
