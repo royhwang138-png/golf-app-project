@@ -15,18 +15,6 @@ def init_db():
 
 init_db()
 
-# 🌟 전국 단위 골프장 데이터베이스 (가상의 중앙 API 서버 역할)
-national_golf_courses = [
-    {"id": 1, "name": "서울 레이크사이드", "location": "서울", "lat": 37.5665, "lng": 126.9780},
-    {"id": 2, "name": "경기 드림베이", "location": "경기", "lat": 37.2752, "lng": 127.0095},
-    {"id": 3, "name": "강원 파인힐스", "location": "강원", "lat": 37.8813, "lng": 127.7298},
-    {"id": 4, "name": "제주 오션뷰CC", "location": "제주", "lat": 33.4996, "lng": 126.5312},
-    {"id": 5, "name": "부산 해운대비치", "location": "부산", "lat": 35.1796, "lng": 129.0756},
-    {"id": 6, "name": "충청 백제CC", "location": "충청", "lat": 36.3284, "lng": 127.4268},
-    {"id": 7, "name": "전라 그린파크", "location": "전라", "lat": 35.8242, "lng": 127.1480},
-    {"id": 8, "name": "경상 블루원", "location": "경상", "lat": 35.8342, "lng": 129.2189}
-]
-
 class ReservationForm(BaseModel):
     course_name: str
     user_name: str
@@ -54,8 +42,10 @@ def show_webpage():
                 .weather-badge { display: inline-flex; align-items: center; background-color: #e0f7fa; color: #006064; padding: 6px 12px; border-radius: 20px; font-weight: 600; margin-bottom: 15px; font-size: 0.85em; }
                 .login-container { max-width: 420px; margin: 120px auto; background: white; padding: 50px; border-radius: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.1); text-align: center; }
                 .loader-container { display: none; text-align: center; padding: 40px 0; }
-                /* 지역 필터 버튼 스타일 */
                 .region-btn { margin: 5px; border-radius: 20px; font-weight: bold; }
+                
+                /* 긴 글씨 잘리게 하는 디자인 */
+                .text-ellipsis { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
             </style>
         </head>
         <body>
@@ -76,7 +66,7 @@ def show_webpage():
             <div id="main-app-section" style="display: none;">
                 <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm py-3">
                     <div class="container d-flex justify-content-between align-items-center">
-                        <a class="navbar-brand text-primary fw-bold fs-4" href="#" style="color: #0f2027 !important;"><i class="bi bi-flag-fill me-2"></i>전국 프리미엄 라운딩</a>
+                        <a class="navbar-brand text-primary fw-bold fs-4" href="#" style="color: #0f2027 !important;"><i class="bi bi-flag-fill me-2"></i>리얼 데이터 라운딩</a>
                         <div class="d-flex align-items-center">
                             <span id="welcome-msg" class="me-3 fw-bold text-success d-none d-sm-block"></span>
                             <button class="btn btn-outline-warning fw-bold me-2 px-3" onclick="loadMyPage()"><i class="bi bi-calendar-check me-1"></i>내 예약</button>
@@ -87,23 +77,21 @@ def show_webpage():
 
                 <div class="hero-section text-center">
                     <div class="container">
-                        <h1 class="display-5 fw-bold mb-3">전국 8도, 어디로 떠나시겠습니까?</h1>
-                        <p class="lead mb-4 opacity-75">중앙 API 서버와 연동하여 전국 골프장 현황을 실시간으로 제공합니다.</p>
+                        <h1 class="display-5 fw-bold mb-3">실제 운영 중인 골프장을 찾습니다</h1>
+                        <p class="lead mb-4 opacity-75"><span class="badge bg-warning text-dark me-2">LIVE</span>글로벌 지도 API망과 연결되어 실제 좌표와 날씨를 수집합니다.</p>
                         
-                        <!-- 🌟 API 연동 고도화: 전국 지역별 빠른 검색 버튼 -->
                         <div class="mb-4">
-                            <button class="btn btn-light region-btn" onclick="searchRegion('전국')">전국 전체보기</button>
-                            <button class="btn btn-outline-light region-btn" onclick="searchRegion('서울')">서울/경기</button>
-                            <button class="btn btn-outline-light region-btn" onclick="searchRegion('제주')">제주</button>
-                            <button class="btn btn-outline-light region-btn" onclick="searchRegion('부산')">부산/경상</button>
+                            <button class="btn btn-light region-btn" onclick="searchRealApi('서울')">서울/경기</button>
+                            <button class="btn btn-outline-light region-btn" onclick="searchRealApi('강원')">강원도</button>
+                            <button class="btn btn-outline-light region-btn" onclick="searchRealApi('제주')">제주도</button>
                         </div>
 
                         <div class="row justify-content-center">
                             <div class="col-md-7 col-sm-10">
                                 <div class="input-group input-group-lg shadow">
                                     <span class="input-group-text bg-white border-0"><i class="bi bi-search text-muted"></i></span>
-                                    <input type="text" id="location-input" class="form-control border-0" placeholder="직접 지역 입력 (예: 강원)">
-                                    <button class="btn btn-primary px-4 fw-bold" onclick="searchRegion('custom')">검색하기</button>
+                                    <input type="text" id="location-input" class="form-control border-0" placeholder="동네 이름 입력 (예: 송파구)">
+                                    <button class="btn btn-primary px-4 fw-bold" onclick="searchRealApi('custom')">실시간 검색</button>
                                 </div>
                             </div>
                         </div>
@@ -113,7 +101,7 @@ def show_webpage():
                 <div class="container pb-5">
                     <div id="loading-spinner" class="loader-container">
                         <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;" role="status"></div>
-                        <h5 class="mt-3 fw-bold text-secondary">전국 API 망에서 데이터를 수집 중입니다...</h5>
+                        <h5 class="mt-3 fw-bold text-secondary">글로벌 지도 서버에서 <span id="search-keyword-display" class="text-primary"></span> 지역의 찐 골프장을 찾고 있습니다...</h5>
                     </div>
 
                     <div id="map-container" class="map-wrapper">
@@ -134,7 +122,7 @@ def show_webpage():
                         document.getElementById('login-section').style.display = 'none';
                         document.getElementById('main-app-section').style.display = 'block';
                         document.getElementById('welcome-msg').innerText = "환영합니다, " + currentUser + "님!";
-                        searchRegion('전국'); // 로그인 즉시 전국 데이터 불러오기
+                        searchRealApi('서울'); // 로그인 즉시 서울 데이터 불러오기
                     } else {
                         alert("❌ 인증 실패");
                     }
@@ -148,15 +136,16 @@ def show_webpage():
                     document.getElementById('map-container').style.display = 'none';
                 }
 
-                // 🌟 외부 API 호출을 담당하는 핵심 함수
-                async function searchRegion(region) {
+                // 🌟 [핵심] 가짜 데이터가 아닌, 진짜 외부망(OpenStreetMap)으로 접속하는 통신 모듈
+                async function searchRealApi(region) {
                     let searchKeyword = region;
                     if (region === 'custom') {
                         searchKeyword = document.getElementById('location-input').value;
                     }
-                    if (region === '서울') searchKeyword = '서울|경기';
-                    if (region === '부산') searchKeyword = '부산|경상';
+                    if (!searchKeyword) { alert("검색할 지역을 입력해주세요!"); return; }
 
+                    document.getElementById('search-keyword-display').innerText = searchKeyword;
+                    
                     const contentArea = document.getElementById('content-area');
                     const mapContainer = document.getElementById('map-container');
                     const spinner = document.getElementById('loading-spinner');
@@ -166,48 +155,54 @@ def show_webpage():
                     spinner.style.display = 'block';
 
                     try {
-                        // 중앙 API 서버에 데이터 요청 (Fetch)
-                        let url = '/api/golf-courses';
-                        if (searchKeyword !== '전국' && searchKeyword !== '') {
-                            url = `/api/golf-courses?region=${searchKeyword}`;
-                        }
-
-                        const response = await fetch(url);
+                        // 1. 글로벌 지도 서버에 "해당 지역 + 골프장" 키워드로 직접 요청 발송 (최대 8개)
+                        const realApiUrl = `https://nominatim.openstreetmap.org/search?format=json&q=골프장+${searchKeyword}&limit=8`;
+                        const response = await fetch(realApiUrl);
                         const data = await response.json();
                         
                         spinner.style.display = 'none';
 
-                        if (data.result.length === 0) {
-                            contentArea.innerHTML = "<div class='col-12 text-center mt-5'><i class='bi bi-emoji-frown fs-1 text-muted'></i><h4 class='text-muted mt-3 fw-bold'>해당 지역의 API 데이터가 없습니다.</h4></div>";
+                        if (data.length === 0) {
+                            contentArea.innerHTML = "<div class='col-12 text-center mt-5'><i class='bi bi-emoji-frown fs-1 text-muted'></i><h4 class='text-muted mt-3 fw-bold'>해당 지역의 실제 골프장 데이터를 찾지 못했습니다.</h4></div>";
                             return;
                         }
 
-                        const first = data.result[0];
-                        const bbox = `${first.lng - 0.05},${first.lat - 0.05},${first.lng + 0.05},${first.lat + 0.05}`;
-                        document.getElementById('map-frame').src = `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${first.lat},${first.lng}`;
+                        // 2. 검색된 첫 번째 진짜 골프장의 위도/경도를 바탕으로 지도 렌더링
+                        const first = data[0];
+                        const bbox = `${parseFloat(first.lon) - 0.05},${parseFloat(first.lat) - 0.05},${parseFloat(first.lon) + 0.05},${parseFloat(first.lat) + 0.05}`;
+                        document.getElementById('map-frame').src = `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${first.lat},${first.lon}`;
                         mapContainer.style.display = 'block';
 
-                        for (const c of data.result) {
+                        // 3. 응답받은 실제 데이터를 화면에 그리기
+                        for (let i = 0; i < data.length; i++) {
+                            const c = data[i];
+                            
+                            // 실제 데이터는 이름이 복잡하므로 예쁘게 다듬기
+                            let realName = c.name;
+                            if (!realName) { realName = c.display_name.split(',')[0]; }
+                            let realAddress = c.display_name.split(',').slice(0, 3).join(', ');
+
+                            // 각 진짜 골프장의 좌표로 기상청 API에 날씨 물어보기
                             let weatherHtml = "<div class='weather-badge'><i class='bi bi-cloud-arrow-down me-2'></i>날씨 수집 중...</div>";
                             try {
-                                const weatherRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${c.lat}&longitude=${c.lng}&current_weather=true`);
+                                const weatherRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${c.lat}&longitude=${c.lon}&current_weather=true`);
                                 const weatherData = await weatherRes.json();
                                 const temp = weatherData.current_weather.temperature;
-                                weatherHtml = `<div class='weather-badge'><i class='bi bi-thermometer-half me-1'></i>${temp}°C</div>`;
+                                weatherHtml = `<div class='weather-badge'><i class='bi bi-thermometer-half me-1'></i>현지 기온: ${temp}°C</div>`;
                             } catch (error) {
-                                weatherHtml = `<div class='weather-badge bg-light text-danger'><i class='bi bi-exclamation-triangle me-1'></i>오류</div>`;
+                                weatherHtml = `<div class='weather-badge bg-light text-danger'><i class='bi bi-exclamation-triangle me-1'></i>날씨 수집 실패</div>`;
                             }
 
                             contentArea.innerHTML += `
                                 <div class="col-lg-3 col-md-4 col-sm-6">
                                     <div class="card h-100 p-3">
-                                        <h5 class="card-title fw-bold mb-1" style="color: #0f2027;">${c.name}</h5>
-                                        <h6 class="card-subtitle mb-2 text-secondary" style="font-size: 0.9em;"><i class="bi bi-geo-alt-fill me-1 text-danger"></i>${c.location}</h6>
+                                        <h5 class="card-title fw-bold mb-1 text-ellipsis" style="color: #0f2027;" title="${realName}">${realName}</h5>
+                                        <h6 class="card-subtitle mb-2 text-secondary text-ellipsis" style="font-size: 0.85em;" title="${realAddress}"><i class="bi bi-geo-alt-fill me-1 text-danger"></i>${realAddress}</h6>
                                         ${weatherHtml}
                                         <div class="mt-auto">
-                                            <input type="text" id="name-${c.id}" class="form-control form-control-sm mb-2 bg-light" value="${currentUser}" readonly>
-                                            <input type="date" id="date-${c.id}" class="form-control form-control-sm mb-2">
-                                            <button class="btn btn-success btn-sm w-100 fw-bold shadow-sm" onclick="bookCourse(${c.id}, '${c.name}')">예약</button>
+                                            <input type="text" id="name-${i}" class="form-control form-control-sm mb-2 bg-light" value="${currentUser}" readonly>
+                                            <input type="date" id="date-${i}" class="form-control form-control-sm mb-2">
+                                            <button class="btn btn-success btn-sm w-100 fw-bold shadow-sm" onclick="bookCourse(${i}, '${realName.replace(/'/g, "\\'")}')">예약</button>
                                         </div>
                                     </div>
                                 </div>
@@ -215,7 +210,7 @@ def show_webpage():
                         }
                     } catch (error) {
                         spinner.style.display = 'none';
-                        alert("API 서버 통신 장애가 발생했습니다.");
+                        alert("글로벌 서버망 통신 장애가 발생했습니다.");
                     }
                 }
 
@@ -244,16 +239,6 @@ def show_webpage():
     </html>
     """
 
-# 🌟 전국 단위 데이터를 제공하는 새로운 API 엔드포인트
-@app.get("/api/golf-courses")
-def get_golf_courses_api(region: str = None):
-    if region:
-        # '서울|경기' 처럼 여러 지역을 동시에 검색할 수 있도록 처리
-        regions = region.split('|')
-        result = [c for c in national_golf_courses if any(r in c["location"] for r in regions)]
-        return {"result": result}
-    return {"result": national_golf_courses}
-
 @app.post("/book")
 def make_reservation(form: ReservationForm):
     conn = sqlite3.connect('golf_app.db')
@@ -272,3 +257,62 @@ def get_my_reservations():
     result = [{"course_name": r["course_name"], "user_name": r["user_name"], "date": r["date"]} for r in c.fetchall()]
     conn.close()
     return {"result": result}
+
+@app.delete("/cancel/{res_id}")
+def cancel_reservation(res_id: int):
+    conn = sqlite3.connect('golf_app.db')
+    c = conn.cursor()
+    c.execute("DELETE FROM reservations WHERE id = ?", (res_id,))
+    conn.commit()
+    conn.close()
+    return {"message": "예약이 성공적으로 취소되었습니다."}
+
+@app.get("/admin", response_class=HTMLResponse)
+def show_admin_page():
+    conn = sqlite3.connect('golf_app.db')
+    conn.row_factory = sqlite3.Row
+    c = conn.cursor()
+    c.execute("SELECT * FROM reservations ORDER BY id DESC")
+    rows = c.fetchall()
+    conn.close()
+    
+    html_content = """
+    <!DOCTYPE html>
+    <html lang="ko">
+        <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1">
+            <title>시스템 통합 관리자</title>
+            <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+        </head>
+        <body class="bg-light p-4">
+            <h2 class="fw-bold mb-4">⚙️ 시스템 통합 관리자 대시보드</h2>
+            <div class="table-responsive bg-white p-3 rounded shadow-sm">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr><th>ID</th><th>골프장명</th><th>예약자 성함</th><th>예약 날짜</th><th>관리</th></tr>
+                    </thead>
+                    <tbody>
+    """
+    for r in rows:
+        html_content += f"""
+                        <tr>
+                            <td>{r['id']}</td><td>{r['course_name']}</td><td>{r['user_name']}</td><td>{r['date']}</td>
+                            <td><button class="btn btn-sm btn-danger" onclick="cancelReservation({r['id']})">예약 취소</button></td>
+                        </tr>
+        """
+    html_content += """
+                    </tbody>
+                </table>
+            </div>
+            <script>
+                function cancelReservation(id) {
+                    if(confirm("삭제하시겠습니까?")) {
+                        fetch('/cancel/' + id, { method: 'DELETE' }).then(r => r.json()).then(data => { alert(data.message); location.reload(); });
+                    }
+                }
+            </script>
+        </body>
+    </html>
+    """
+    return html_content
