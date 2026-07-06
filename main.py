@@ -43,38 +43,87 @@ def show_webpage():
                 .btn-primary { background-color: #0b1a40; border: none; }
                 .map-wrapper { border-radius: 15px; overflow: hidden; display: none; margin-bottom: 20px;}
                 .weather-badge { display: inline-block; background-color: #e3f2fd; color: #0277bd; padding: 5px 10px; border-radius: 8px; font-weight: bold; margin-bottom: 15px; font-size: 0.9em; }
+                
+                /* 로그인 화면 전용 디자인 */
+                .login-container { max-width: 400px; margin: 100px auto; background: white; padding: 40px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); text-align: center; }
             </style>
         </head>
         <body>
-            <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
-                <div class="container">
-                    <a class="navbar-brand text-primary fw-bold" href="#" style="color: #0b1a40 !important;">⛳ 프리미엄 예약</a>
-                    <button class="btn btn-outline-warning fw-bold" onclick="loadMyPage()">나의 예약 내역</button>
-                </div>
-            </nav>
+            <!-- 🌟 1. 시스템 입장 게이트 (로그인 화면) -->
+            <div id="login-section" class="login-container">
+                <h2 class="fw-bold mb-4" style="color: #0b1a40;">🔐 VIP 회원 로그인</h2>
+                <p class="text-muted mb-4">서비스 이용을 위해 로그인해 주세요.</p>
+                <input type="text" id="login-id" class="form-control mb-3" placeholder="아이디 (입력: vip)">
+                <input type="password" id="login-pw" class="form-control mb-4" placeholder="비밀번호 (입력: 1234)">
+                <button class="btn btn-primary w-100 py-2 fw-bold" onclick="processLogin()">로그인</button>
+            </div>
 
-            <div class="hero-section text-center">
-                <div class="container">
-                    <h1 class="display-6 fw-bold mb-3">최상의 라운딩을 경험하세요</h1>
-                    <div class="row justify-content-center">
-                        <div class="col-md-6 col-sm-10">
-                            <div class="input-group input-group-lg shadow-sm">
-                                <input type="text" id="location-input" class="form-control" placeholder="지역 입력 (예: 서울)">
-                                <button class="btn btn-primary px-4" onclick="loadGolfCourses()">검색</button>
+            <!-- 🌟 2. 실제 서비스 화면 (초기에는 숨겨둠) -->
+            <div id="main-app-section" style="display: none;">
+                <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
+                    <div class="container d-flex justify-content-between">
+                        <a class="navbar-brand text-primary fw-bold" href="#" style="color: #0b1a40 !important;">⛳ 프리미엄 예약</a>
+                        <div>
+                            <span id="welcome-msg" class="me-3 fw-bold text-success"></span>
+                            <button class="btn btn-outline-warning fw-bold me-2" onclick="loadMyPage()">나의 예약 내역</button>
+                            <button class="btn btn-sm btn-secondary" onclick="processLogout()">로그아웃</button>
+                        </div>
+                    </div>
+                </nav>
+
+                <div class="hero-section text-center">
+                    <div class="container">
+                        <h1 class="display-6 fw-bold mb-3">최상의 라운딩을 경험하세요</h1>
+                        <div class="row justify-content-center">
+                            <div class="col-md-6 col-sm-10">
+                                <div class="input-group input-group-lg shadow-sm">
+                                    <input type="text" id="location-input" class="form-control" placeholder="지역 입력 (예: 서울)">
+                                    <button class="btn btn-primary px-4" onclick="loadGolfCourses()">검색</button>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
 
-            <div class="container pb-5">
-                <div id="map-container" class="map-wrapper">
-                    <iframe id="map-frame" width="100%" height="350" style="border:0;"></iframe>
+                <div class="container pb-5">
+                    <div id="map-container" class="map-wrapper">
+                        <iframe id="map-frame" width="100%" height="350" style="border:0;"></iframe>
+                    </div>
+                    <div id="content-area" class="row g-4"></div>
                 </div>
-                <div id="content-area" class="row g-4"></div>
             </div>
 
             <script>
+                // --- 로그인/로그아웃 시스템 로직 ---
+                let currentUser = ""; // 현재 로그인한 사람의 이름을 기억하는 변수
+
+                function processLogin() {
+                    const id = document.getElementById('login-id').value;
+                    const pw = document.getElementById('login-pw').value;
+
+                    // 아이디 'vip', 비밀번호 '1234'일 때만 통과 (현장의 접근 통제 흉내내기)
+                    if (id === 'vip' && pw === '1234') {
+                        currentUser = "VIP회원"; // 예약할 때 이 이름을 자동으로 사용
+                        document.getElementById('login-section').style.display = 'none';
+                        document.getElementById('main-app-section').style.display = 'block';
+                        document.getElementById('welcome-msg').innerText = "환영합니다, " + currentUser + "님!";
+                    } else {
+                        alert("❌ 인증 실패: 아이디 또는 비밀번호가 일치하지 않습니다.");
+                    }
+                }
+
+                function processLogout() {
+                    currentUser = "";
+                    document.getElementById('login-id').value = "";
+                    document.getElementById('login-pw').value = "";
+                    document.getElementById('main-app-section').style.display = 'none';
+                    document.getElementById('login-section').style.display = 'block';
+                    document.getElementById('content-area').innerHTML = "";
+                    document.getElementById('map-container').style.display = 'none';
+                    alert("정상적으로 로그아웃 되었습니다.");
+                }
+
+                // --- 기존 예약 및 날씨 시스템 로직 ---
                 async function loadGolfCourses() {
                     const loc = document.getElementById('location-input').value;
                     let url = '/search';
@@ -98,10 +147,8 @@ def show_webpage():
                     mapFrame.src = `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${first.lat},${first.lng}`;
                     mapContainer.style.display = 'block';
 
-                    // 🌟 날씨 API 연동: 외부 전문가에게 날씨 물어보기
                     for (const c of data.result) {
                         let weatherHtml = "<div class='weather-badge'>☁️ 날씨 정보 불러오는 중...</div>";
-                        
                         try {
                             const weatherRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${c.lat}&longitude=${c.lng}&current_weather=true`);
                             const weatherData = await weatherRes.json();
@@ -118,7 +165,8 @@ def show_webpage():
                                         <h4 class="card-title fw-bold">🏌️‍♂️ ${c.name}</h4>
                                         <h6 class="card-subtitle mb-3 text-muted">📍 위치: ${c.location}</h6>
                                         ${weatherHtml}
-                                        <input type="text" id="name-${c.id}" class="form-control mb-2" placeholder="예약자 성함">
+                                        <!-- 로그인한 사용자의 이름을 자동으로 채워넣고 수정 못하게 막음(readonly) -->
+                                        <input type="text" id="name-${c.id}" class="form-control mb-2" value="${currentUser}" readonly>
                                         <input type="date" id="date-${c.id}" class="form-control mb-2">
                                         <button class="btn btn-success w-100 fw-bold" onclick="bookCourse(${c.id}, '${c.name}')">예약 확정하기</button>
                                     </div>
@@ -131,7 +179,7 @@ def show_webpage():
                 function bookCourse(id, cName) {
                     const uName = document.getElementById(`name-${id}`).value;
                     const date = document.getElementById(`date-${id}`).value;
-                    if(!uName || !date) { alert("입력해주세요!"); return; }
+                    if(!date) { alert("예약 날짜를 선택해주세요!"); return; }
 
                     fetch('/book', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ course_name: cName, user_name: uName, date: date })
                     }).then(r => r.json()).then(data => { alert(data.message); });
