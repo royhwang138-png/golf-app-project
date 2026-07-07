@@ -28,6 +28,37 @@ def get_tee_times(course_id: int, date: str):
         times.append({"time": t, "status": status})
         
     return {"times": times}
+    # ... (기존 상단 코드들) ...
+
+# 예약을 저장할 가상의 데이터베이스 장부 (서버 메모리)
+reservations_db = []
+
+# 🌟 사용자의 예약 요청을 처리하는 POST API 창구
+@app.post("/api/reserve")
+def make_reservation(data: dict):
+    # 1. 필수 데이터 검증
+    if not data.get("booker_name") or not data.get("phone"):
+        return {"success": False, "message": "필수 입력 항목이 누락되었습니다."}
+    
+    # 2. 예약 장부에 기록 추가
+    reservation_id = len(reservations_db) + 1
+    new_booking = {
+        "id": reservation_id,
+        "course_id": data.get("course_id"),
+        "date": data.get("date"),
+        "time": data.get("time"),
+        "booker_name": data.get("booker_name"),
+        "phone": data.get("phone"),
+        "companions": data.get("companions", [])
+    }
+    reservations_db.append(new_booking)
+    
+    # 3. 완료 신호와 예약 번호 반환
+    return {"success": True, "reservation_id": f"RES-{reservation_id:04d}"}
+
+# @app.get("/web", response_class=HTMLResponse)
+# def show_webpage():
+# ... (기존 하단 웹페이지 코드들) ...
 
 @app.get("/web", response_class=HTMLResponse)
 def show_webpage():
